@@ -20,7 +20,7 @@
 #define kDefaultReloadShowAnimationDuration 0.6
 
 //Position for the stack of navigation controllers to originate at
-#define kDefaultVerticalOrigin 100              //Vertical origin of the controller card stack. Making this value larger/smaller will make the card shift down/up.
+#define kDefaultVerticalOrigin 60              //Vertical origin of the controller card stack. Making this value larger/smaller will make the card shift down/up.
 
 //Corner radius properties
 #define kDefaultCornerRadius 5.0
@@ -123,7 +123,7 @@
     CGFloat originOffset = 0;
     for (int i = 0; i < index; i ++) {
         CGFloat scalingFactor = [self scalingFactorForIndex: i];
-//        NSLog(@"%@", controllerCard.navigationController.navigationBar);
+        //        NSLog(@"%@", controllerCard.navigationController.navigationBar);
         originOffset += scalingFactor * controllerCard.navigationController.navigationBar.frame.size.height * self.cardNavigationBarOverlap;
     }
     
@@ -150,8 +150,8 @@
         [navigationController pushViewController:viewController animated:NO];
         
         KLControllerCard* noteContainer = [[KLControllerCard alloc] initWithNoteViewController: self
-                                                                                    navigationController: navigationController
-                                                                                                   index:count];
+                                                                          navigationController: navigationController
+                                                                                         index:count];
         [noteContainer setDelegate: self];
         [navigationControllers addObject: noteContainer];
         
@@ -252,7 +252,7 @@
 #pragma mark - Delegate implementation for KLControllerCard
 
 -(void) controllerCard:(KLControllerCard*)controllerCard didChangeToDisplayState:(KLControllerCardState) toState fromDisplayState:(KLControllerCardState) fromState {
-
+    
     if (fromState == KLControllerCardStateDefault && toState == KLControllerCardStateFullScreen) {
         
         //For all cards above the current card move them
@@ -333,7 +333,7 @@
         originY = [noteView defaultVerticalOriginForControllerCard:self
                                                            atIndex: index];
         [self setFrame: noteView.view.bounds];
-
+        
         //Initialize the view's properties
         [self setAutoresizesSubviews:YES];
         [self setAutoresizingMask:self.noteViewController.cardAutoresizingMask];
@@ -358,12 +358,12 @@
         //Add long touch recognizer
         if (self.noteViewController.cardEnablePressGesture) {
             UILongPressGestureRecognizer* pressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self
-                                                                                                 action:@selector(didPerformLongPress:)];
+                                                                                                       action:@selector(didPerformLongPress:)];
             [pressGesture setMinimumPressDuration: self.noteViewController.cardMinimumPressDuration];
             //Add the gesture to the navigation bar
             [self.navigationController.navigationBar addGestureRecognizer:pressGesture];
             
-             pressGesture.delegate = self;
+            pressGesture.delegate = self;
         }
         
         //Initialize the state to default
@@ -379,7 +379,7 @@
 }
 
 -(void) didPerformLongPress:(UILongPressGestureRecognizer*) recognizer {
-
+    
     if (self.state == KLControllerCardStateDefault && recognizer.state == UIGestureRecognizerStateEnded) {
         //Go to full size
         [self setState:KLControllerCardStateFullScreen animated:YES];
@@ -504,7 +504,7 @@
     }
     
     // Set corner radius
-    [self.navigationController.view.layer setCornerRadius: self.noteViewController.cardCornerRadius];    
+    [self.navigationController.view.layer setCornerRadius: self.noteViewController.cardCornerRadius];
     
     //Full Screen State
     if (state == KLControllerCardStateFullScreen) {
@@ -537,7 +537,7 @@
     }
 }
 
-#pragma mark - Various data helpers 
+#pragma mark - Various data helpers
 
 -(CGPoint) origin {
     return CGPointMake(0, originY);
