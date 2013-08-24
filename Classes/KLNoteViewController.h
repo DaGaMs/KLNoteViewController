@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+
 @class KLNoteViewController;
 @class KLControllerCard;
 @protocol KLNoteViewControllerDataSource;
@@ -26,6 +27,8 @@ enum {
 };
 typedef UInt32 KLControllerCardPanGestureScope;
 
+typedef void (^transitionStateBlock)(UIViewController* viewController, KLControllerCardState fromState, KLControllerCardState);
+
 @protocol KLControllerCardDelegate <NSObject>
 @optional
 //Called on any time a state change has occured - even if a state has changed to itself - (i.e. from KLControllerCardStateDefault to KLControllerCardStateDefault)
@@ -33,6 +36,8 @@ typedef UInt32 KLControllerCardPanGestureScope;
 
 //Called when user is panning and a the card has travelled X percent of the distance to the top - Used to redraw other cards during panning fanout
 -(void) controllerCard:(KLControllerCard*)controllerCard didUpdatePanPercentage:(CGFloat) percentage;
+-(void) controllerCard:(KLControllerCard *)controllerCard willBeginPanningGesture:(UIPanGestureRecognizer*) gesture;
+-(void) controllerCard:(KLControllerCard *)controllerCard didEndPanningGesture:(UIPanGestureRecognizer*) gesture;
 @end
 
 //KLController card encapsulates the UINavigationController handling all the resizing and state management for the view. It has no concept of the other cards or world outside of itself.
@@ -41,29 +46,38 @@ typedef UInt32 KLControllerCardPanGestureScope;
     @private
     CGFloat originY;
     CGFloat scalingFactor;
-    NSInteger index;
 }
-@property (nonatomic, strong) UINavigationController* navigationController;
-@property (nonatomic, strong) KLNoteViewController* noteViewController;
-@property (nonatomic, strong) id<KLControllerCardDelegate> delegate;
-@property (nonatomic) CGPoint origin;
-@property (nonatomic) CGFloat panOriginOffset;
-@property (nonatomic) KLControllerCardState state;
--(id) initWithNoteViewController: (KLNoteViewController*) noteView navigationController:(UINavigationController*) navigationController index:(NSInteger) index;
+//Avoid retain cycle by referencing parent as weak
+@property (nonatomic, weak) KLNoteViewController* noteViewController;
+@property (nonatomic, weak) id<KLControllerCardDelegate> delegate;
+@property (nonatomic, strong) UIViewController* viewController; // viewController referenced controllerCard
+@property (nonatomic, assign) CGPoint origin;
+@property (nonatomic, assign) CGFloat panOriginOffset;
+@property (nonatomic, assign) KLControllerCardState state;
+//Gesture Recognizers
+
+@property (nonatomic, strong) UIPanGestureRecognizer* panGesture;
+@property (nonatomic, strong) UITapGestureRecognizer* tapGesture;
+-(id) initWithNoteViewController: (KLNoteViewController*) noteViewController
+               andViewController:(UIViewController*) viewController;
+
+-(void) toggleStateAnimated:(BOOL) animated;
 -(void) setState:(KLControllerCardState) state animated:(BOOL) animated;
 -(void) setYCoordinate:(CGFloat)yValue;
 -(CGFloat) percentageDistanceTravelled;
 @end
 
 //KLNoteViewController manages the cards interfacing between the various cards
-@interface KLNoteViewController : UIViewController  <KLControllerCardDelegate> {
-    NSInteger totalCards;
-}
-@property (nonatomic, assign) id<KLNoteViewControllerDataSource> dataSource;
-@property (nonatomic, assign) id<KLNoteViewControllerDelegate> delegate;
+@interface KLNoteViewController : UIViewController  <KLControllerCardDelegate>
+@property (nonatomic, copy) transitionStateBlock stateTransitionBlock;
+@property (nonatomic, weak) id<KLNoteViewControllerDataSource> dataSource;
+@property (nonatomic, weak) id<KLNoteViewControllerDelegate> delegate;
 
 //Navigation bar properties
 @property (nonatomic, strong) Class cardNavigationBarClass; //Use a custom class for the card navigation bar
+
+//UIScrollView Subview in Controller
+@property (nonatomic, assign) BOOL allowsInteractionInDefaultState;
 
 //Layout properties
 @property (nonatomic) CGFloat cardMinimizedScalingFactor;   //Amount to shrink each card from the previous one
@@ -91,7 +105,7 @@ typedef UInt32 KLControllerCardPanGestureScope;
 //Gesture properties
 @property (nonatomic) KLControllerCardPanGestureScope cardPanGestureScope;
 @property (nonatomic) BOOL cardEnablePressGesture;
-@property (nonatomic) NSTimeInterval cardMinimumPressDuration;
+@property (nonatomic) NSInteger cardMinimumTapsRequired;
 
 //Autoresizing mask used for the card controller
 @property (nonatomic) UIViewAutoresizing cardAutoresizingMask;
@@ -105,8 +119,8 @@ typedef UInt32 KLControllerCardPanGestureScope;
 
 //Helpers for getting information about the controller cards
 -(NSInteger)numberOfControllerCardsInNoteView:(KLNoteViewController*) noteView;
--(UIViewController *)noteView:(KLNoteViewController*)noteView viewControllerForRowAtIndexPath:(NSIndexPath *)indexPath;
--(NSIndexPath*) indexPathForControllerCard: (KLControllerCard*) controllerCard;
+-(UIViewController *)noteView:(KLNoteViewController*)noteView viewControllerAtIndex:(NSInteger) index;
+-(NSInteger) indexForControllerCard: (KLControllerCard*) controllerCard;
 -(void) noteViewController: (KLNoteViewController*) noteViewController didUpdateControllerCard:(KLControllerCard*)controllerCard toDisplayState:(KLControllerCardState) toState fromDisplayState:(KLControllerCardState) fromState;
 @end
 @protocol   KLNoteViewControllerDelegate <NSObject>
@@ -119,5 +133,5 @@ typedef UInt32 KLControllerCardPanGestureScope;
 //Called when the NoteViewController needs to know how many controller cards to expect
 - (NSInteger)numberOfControllerCardsInNoteView:(KLNoteViewController*) noteView;
 //Called to populate the controllerCards array - Automatically maps the UINavigationController to KLControllerCard and adds to array
-- (UIViewController *)noteView:(KLNoteViewController*)noteView viewControllerForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (UIViewController *)noteView:(KLNoteViewController*)noteView viewControllerAtIndex:(NSInteger) index;
 @end
