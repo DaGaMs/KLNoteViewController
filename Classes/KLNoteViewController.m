@@ -37,7 +37,7 @@
 
 //Distance to top of screen that must be passed in order to toggle full screen state transition
 #define kFullScreenDistanceThreshold 44.0
-#define kAllowsInteractionInDefaultState NO
+#define kAllowsInteractionInDefaultState YES
 
 @interface KLNoteViewController ()
 - (void)configureDefaultSettings;
